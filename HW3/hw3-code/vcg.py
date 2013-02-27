@@ -59,7 +59,7 @@ class VCG:
                 except:
                     return c[k] * reserve
             elif k < n - 1:
-                return (c[k] - c[k+1]) * valid_bids[k+1][1] + total_payment(k+1)
+                return (c[k] - c[k+1]) * just_bids[k+1] + total_payment(k+1)
 
         def norm(totals):
             """Normalize total payments by the clicks in each slot"""
