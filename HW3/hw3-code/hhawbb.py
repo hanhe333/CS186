@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import math
 from auction import iround
 from gsp import GSP
 from util import argmax_index
@@ -50,21 +51,17 @@ class BBAgent:
         returns a list of utilities per slot.
         """
         # TODO: Fill this in
-        utilities = [0.0]*(number_players-1)   # Change this
-
         number_players = history.n_agents
-        current_round = history.num_rounds
-        info = slot_info(t, history, reserve)
 
-        for i in range(number_players-1):
-            s_k = click_rate(i, current_round)
-            utilities[i] = s_k*(value - info[i][1])
+        utilities = [0.0]*(number_players)   # Change this
+
+        info = self.slot_info(t, history, reserve)
+
+        for i in range(number_players):
+            s_k = history.round(t-1).clicks[i]
+            utilities[i] = s_k*(self.value - info[i][1])
         
         return utilities
-
-    def click_rate(slot, t):
-        return iround((30*math.cos(math.pi*t/24) + 50)*((.75)**(slot)))
-
 
     def target_slot(self, t, history, reserve):
         """Figure out the best slot to target, assuming that everyone else
@@ -99,10 +96,10 @@ class BBAgent:
     
         if slot == 0:
             bid = self.value
-        elif max_bid >= self.value:
+        elif min_bid >= self.value:
             bid = self.value
         else:
-            bid = max_bid        
+            bid = (prev_round.clicks[slot-1]*self.value - prev_round.clicks[slot]*(self.value - min_bid))/prev_round.clicks[slot-1]
 
         return bid
 
