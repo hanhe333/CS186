@@ -5,7 +5,7 @@
 # called test_blah and runs them)
 
 from auction import History
-from hhawbb import HHAAWbb
+from hhawbb import HHAWbb as BBAgent
 
 def test_bb():
     budget = 1000  # don't want binding budget for this test 

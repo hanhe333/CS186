@@ -51,14 +51,13 @@ class HHAWbb:
         returns a list of utilities per slot.
         """
         # TODO: Fill this in
-        number_players = history.n_agents
-
-        utilities = [0.0]*(number_players)   # Change this
+        clicks = history.round(t-1).clicks
+        utilities = [0.0]*(len(clicks))   # Change this
 
         info = self.slot_info(t, history, reserve)
 
-        for i in range(number_players):
-            s_k = history.round(t-1).clicks[i]
+        for i in xrange(len(clicks)):
+            s_k = clicks[i]
             utilities[i] = s_k*(self.value - info[i][1])
         
         return utilities
