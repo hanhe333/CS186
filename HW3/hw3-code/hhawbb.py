@@ -6,7 +6,7 @@ from auction import iround
 from gsp import GSP
 from util import argmax_index
 
-class BBAgent:
+class HHAWbb:
     """Balanced bidding agent"""
     def __init__(self, id, value, budget):
         self.id = id
