@@ -1,19 +1,53 @@
 #!/usr/bin/env python
 
 import sys
-
+from auction import iround
 from gsp import GSP
 from util import argmax_index
 
 class BBAgent:
+    TOTAL_CLICKS = 0
     """Balanced bidding agent"""
     def __init__(self, id, value, budget):
         self.id = id
         self.value = value
-        self.budget = budget
+        self.budget = {id: budget}
 
-    def initial_bid(self, reserve):
-        return self.value / 2
+    def calculate_total_clicks(t, history):
+        num_slots = len(history.round(t-1).bids)-1
+        if num_slots == 3:
+            TOTAL_CLICKS = 5376
+        elif num_slots == 4:
+            TOTAL_CLICKS = 6352
+        elif num_slots == 5: 
+            TOTAL_CLICKS = 7084
+        elif num_slots == 6: 
+            TOTAL_CLICKS = 7637
+
+    def calculate_past_clicks(t, history):
+        past_clicks = 0
+        for i in range(t-1):
+            past_clicks += sum(history.round(t).clicks)
+        return past_clicks
+
+    # set all budgets equal
+    def initialize_budget(self, t, history):
+        prev_round = history[t-1]
+        for bid in prev_round.bids
+            self.budget[bid.id] = self.budget[self.id]
+
+    def calculate_budgets(self, t, history):
+        # sorted from lowest bid to highest
+        last_bids = sorted(history[t-1].bids, key=lambda bid: bid[1])
+
+        i = 0
+        for bid in reverse(last_bids):
+            try:
+                self.budget[bid[0]] -= history[t-1].slot_payments[i]
+            i += 1
+
+
+
 
 
     def slot_info(self, t, history, reserve):
@@ -67,6 +101,9 @@ class BBAgent:
         info = self.slot_info(t, history, reserve)
         return info[i]
 
+    def initial_bid(self, reserve):
+        return self.value / 2
+
     def bid(self, t, history, reserve):
         # The Balanced bidding strategy (BB) is the strategy for a player j that, given
         # bids b_{-j},
@@ -80,6 +117,16 @@ class BBAgent:
         #        b' = (v_j + p_0(j)) / 2. We can 
         # thus deal with all slots uniformly by defining clicks_{-1} = 2 clicks_0.
         #
+
+        # initialize shit
+        if t == 1:
+            calculate_total_clicks(t, history)
+            initialize_budgets(t, history)
+
+        # keep budget up to date!
+        calculate_budgets(t, history)
+
+
         prev_round = history.round(t-1)
         (slot, min_bid, max_bid) = self.target_slot(t, history, reserve)
 
