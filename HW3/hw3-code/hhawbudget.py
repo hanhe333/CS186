@@ -5,7 +5,7 @@ from auction import iround
 from gsp import GSP
 from util import argmax_index
 
-class BBAgent:
+class HHAWbudget:
     TOTAL_CLICKS = 0
     """Balanced bidding agent"""
     def __init__(self, id, value, budget):
@@ -13,7 +13,7 @@ class BBAgent:
         self.value = value
         self.budget = {id: budget}
 
-    def calculate_total_clicks(t, history):
+    def calculate_total_clicks(self, t, history):
         num_slots = len(history.round(t-1).bids)-1
         if num_slots == 3:
             TOTAL_CLICKS = 5376
@@ -24,7 +24,7 @@ class BBAgent:
         elif num_slots == 6: 
             TOTAL_CLICKS = 7637
 
-    def calculate_past_clicks(t, history):
+    def calculate_past_clicks(self, t, history):
         past_clicks = 0
         for i in range(t-1):
             past_clicks += sum(history.round(t).clicks)
@@ -32,24 +32,23 @@ class BBAgent:
 
     # set all budgets equal
     def initialize_budget(self, t, history):
-        prev_round = history[t-1]
-        for bid in prev_round.bids
-            self.budget[bid.id] = self.budget[self.id]
+        prev_round = history.round(t-1)
+        for bid in prev_round.bids:
+            self.budget[bid[0]] = self.budget[self.id]
 
     def calculate_budgets(self, t, history):
         # sorted from lowest bid to highest
-        last_bids = sorted(history[t-1].bids, key=lambda bid: bid[1])
+        last_bids = sorted(history.round(t-1).bids, key=lambda bid: bid[1])
 
+        # seems hacky
         i = 0
-        for bid in reverse(last_bids):
+        for bid in reversed(last_bids):
             try:
                 self.budget[bid[0]] -= history[t-1].slot_payments[i]
+            except:
+                pass
             i += 1
         
-
-
-
-
     def slot_info(self, t, history, reserve):
         """Compute the following for each slot, assuming that everyone else
         keeps their bids constant from the previous rounds.
@@ -84,8 +83,14 @@ class BBAgent:
         returns a list of utilities per slot.
         """
         # TODO: Fill this in
-        utilities = []   # Change this
+        clicks = history.round(t-1).clicks
+        utilities = [0.0]*(len(clicks))   # Change this
 
+        info = self.slot_info(t, history, reserve)
+
+        for i in xrange(len(clicks)):
+            s_k = clicks[i]
+            utilities[i] = s_k*(self.value - info[i][1])
         
         return utilities
 
@@ -120,11 +125,11 @@ class BBAgent:
 
         # initialize shit
         if t == 1:
-            calculate_total_clicks(t, history)
-            initialize_budgets(t, history)
+            self.calculate_total_clicks(t, history)
+            self.initialize_budget(t, history)
 
         # keep budget up to date!
-        calculate_budgets(t, history)
+        self.calculate_budgets(t, history)
 
 
         prev_round = history.round(t-1)
@@ -132,7 +137,14 @@ class BBAgent:
 
         # TODO: Fill this in.
         bid = 0  # change this
-        
+    
+        if slot == 0:
+            bid = self.value
+        elif min_bid >= self.value:
+            bid = self.value
+        else:
+            bid = (prev_round.clicks[slot-1]*self.value - prev_round.clicks[slot]*(self.value - min_bid))/prev_round.clicks[slot-1]
+
         return bid
 
     def __repr__(self):

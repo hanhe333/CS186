@@ -47,8 +47,8 @@ def sim(config):
     # TODO: Create agents here
     agents = init_agents(config)
     # Uncomment to print agents.
-    #for a in agents:
-    #    logging.info(a)
+    for a in agents:
+        logging.info(a)
 
     n = len(agents)
     by_id = dict((a.id, a) for a in agents)
@@ -138,7 +138,7 @@ def sim(config):
         map(agent_value, slot_occupants[t], slot_clicks[t], slot_payments[t])
         
         ## Debugging. Set to True to see what's happening.
-        log_console = False
+        log_console = True
         if log_console:
             logging.info("\t=== Round %d ===" % t)
             logging.info("\tnum_slots: %d" % num_slots)
