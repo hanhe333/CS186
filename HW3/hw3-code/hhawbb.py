@@ -106,4 +106,3 @@ class HHAWbb:
         return "%s(id=%d, value=%d)" % (
             self.__class__.__name__, self.id, self.value)
 
-

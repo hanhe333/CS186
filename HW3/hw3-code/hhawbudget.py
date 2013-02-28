@@ -2,6 +2,7 @@
 
 import sys
 from auction import iround
+import math
 from gsp import GSP
 from util import argmax_index
 
@@ -11,7 +12,8 @@ class HHAWbudget:
     def __init__(self, id, value, budget):
         self.id = id
         self.value = value
-        self.budget = {id: budget}
+        self.budget = budget
+        self.number_of_players
 
     def calculate_total_clicks(self, t, history):
         num_slots = len(history.round(t-1).bids)-1
@@ -37,17 +39,26 @@ class HHAWbudget:
             self.budget[bid[0]] = self.budget[self.id]
 
     def calculate_budgets(self, t, history):
-        # sorted from lowest bid to highest
-        last_bids = sorted(history.round(t-1).bids, key=lambda bid: bid[1])
+       # sorted from lowest bid to highest
+       id_to_budget = dict()
 
-        # seems hacky
-        i = 0
-        for bid in reversed(last_bids):
-            try:
-                self.budget[bid[0]] -= history[t-1].slot_payments[i]
-            except:
-                pass
-            i += 1
+       ids = list()
+       for i in xrange(history.round(t-1).bids):
+           ids.append(history.round(t-1).bids[i][0])
+
+       for idx in ids:
+           for i in xrange(t):
+               bids = sorted(history.round(i).bids, key=lambda bid: bid[1])
+               slot_num = -1
+               for j in xrange(bids):
+                   if bids[j][0] == idx:
+                       slot_num = j
+               if not idx in id_to_budget:
+                   id_to_buget[idx] = 0
+               if slot_num != -1:
+                   id_to_budget[idx] = id_to_budget[idx] + history.round(i).slot_payments[slot_num]
+
+       return id_to_budget
         
     def slot_info(self, t, history, reserve):
         """Compute the following for each slot, assuming that everyone else
@@ -107,7 +118,12 @@ class HHAWbudget:
         return info[i]
 
     def initial_bid(self, reserve):
-        return self.value / 2
+        return self.value
+
+    def clicks_round(self, t):
+        clicks = 0.0
+        for i in range(self.number_of_players-1):
+            clicks += iround(iround(30*math.cos(math.pi*t/24) + 50)*(.75**i))
 
     def bid(self, t, history, reserve):
         # The Balanced bidding strategy (BB) is the strategy for a player j that, given
@@ -123,29 +139,20 @@ class HHAWbudget:
         # thus deal with all slots uniformly by defining clicks_{-1} = 2 clicks_0.
         #
 
-        # initialize shit
-        if t == 1:
-            self.calculate_total_clicks(t, history)
-            self.initialize_budget(t, history)
-
-        # keep budget up to date!
-        self.calculate_budgets(t, history)
-
-
+        # click ratio
         prev_round = history.round(t-1)
-        (slot, min_bid, max_bid) = self.target_slot(t, history, reserve)
+        
+        clicks = 0.0
+        for i in range(4):
+            clicks += iround(iround(30*math.cos(math.pi*t/24) + 50)*(.75**i))
 
-        # TODO: Fill this in.
-        bid = 0  # change this
-    
-        if slot == 0:
-            bid = self.value
-        elif min_bid >= self.value:
-            bid = self.value
-        else:
-            bid = (prev_round.clicks[slot-1]*self.value - prev_round.clicks[slot]*(self.value - min_bid))/prev_round.clicks[slot-1]
+        click_ratio = clicks/219.0
 
-        return bid
+        # our budget
+
+
+        
+        return 0
 
     def __repr__(self):
         return "%s(id=%d, value=%d)" % (
