@@ -1,0 +1,58 @@
+\documentclass[12pt]{article}
+\usepackage{latexsym}
+\usepackage{amssymb,amsmath,mathtools}
+\usepackage[dvips]{graphicx}
+\usepackage[dvips]{graphics}
+\usepackage[margin=1in]{geometry}
+\parindent=0pt 
+\begin{document}
+\begin{noindent}\\
+Han He \& Andrew Wang\\
+\today
+
+\begin{center}
+\textbf{\large{CS 186 Assignment 3}} \\
+\medskip
+\end{center}
+
+\begin{enumerate}
+%% Problem 1
+\item Please see HHAW.py
+
+%% Problem 2
+\item
+\begin{enumerate}
+\item The average utility of an auction with five truthful bidders tends to be around \$350. This is because we are randomly distributing each person's value between \$.25 and \$1.75, so in a five person auction, the average difference between each player is $(1.75 - .25)/6 = .25$. Therefore, in each round each person should generate roughly \$.25 times the number of clicks in total utility.
+
+The average utility of an auction with with five balanced budget bidders falls in the range of around \$700, which is roughly 2x the average utility of an auction of five truthful bidders. This system generates a much higher utility for each player because of two factors. First, each player is bidding lower than their true value, which automatically generates more utility for each player. Second, each player is adapting to the others' bids, which overtime causes each player means that each person is moving toward an equilibrium that maximizes each persons outcome.
+
+\item When we have an auction with one truthful bidder and four balanced budget bidders, the balanced budget bidders tend to keep the \$700 average, whereas the truthful bidder tends to be around \$650. It makes sense that the honest bidder's utility increases because we know that the balanced budget bidders will never bid higher than their true value and therefore are likely to bid below that. The utility for the balanced budget bidders also does not move very much, which may be a sign that although one player is definitely bidding higher, they can still adapt to the situation. 
+
+When we have an auction with four truthful bidders and one balanced budget bidders, the truthful bidders average a utility of about \$400, while the balanced budget bidder has a utility of about \$600. It makes sense that the truthful bidder's utility goes up because there is one player who will likely bid less, allowing one player to get a lower price per day. It also makes sense that the balanced budget bidder has a higher utility than the truthful bidders because he is the only only one optimizing, but that this value is lower than when he is only with balanced bidders, because in that case everyone would bid lower.
+\end{enumerate}
+
+%% Problem 3
+\item  
+\begin{enumerate}
+\item The auctioneers revenue for a auction with five balanced budget bidders averages around \$4300. When we add a reserve price, of 40, this changes to \$4600. When it is 55, revenue is \$4800, at 70, revenue is \$5000, and at 85, revenue is \$4900. The peak seems to be around 75, when the revenue is \$5050.
+
+In general it seems like as the effect of a reserve price on revenue is parabolic - initially, as we increase the reserve price, we also increase revenue because the reserve price is setting a floor on the payment. However, as the reserve price increases, it is also decreasing the number of slots that we are allocating if there are not enough bids above the reserve price. Hence we see an increase in the beginning up to 75, and a decrease from that point forward.
+
+\item See code.
+
+\item The auctioneers revenue is \$3400 without a reserve price. If we introduce a reserve price of 40, this changes to \$3800. When it is 55, revenue is \$4100, at 70, revenue is \$4300, at 85, revenue is \$4500, at 100, revenue is \$4550, and at 115, revenue is \$4200. Revenue peaks at about \$4550 where the reserve price is 100. It is clear that as with above, reserve price has a parabolic effect on revenue. Initially, as the reserve price goes up the person directly above the reserve price pays more because there are no valid bids below. However, as the reserve price gets too high, we are cutting out too many bids and not allocating the slots. In this case, the higher bids also do not cause externalities to the bids that were cut, and hence pay less.
+
+With the VCG auction, the reserve price that maximizes revenue is higher than that for a GSP auction. We think this is because for a GSP auction, the benefit of a reserve price is that the bidder directly higher than the reserve price is now paying the reserve price instead of the bid directly below the reserve price. However, for a VCG auction, the bidder directly higher than the reserve price is paying the reserve price times the total number of clicks instead of his externality cost, which in this case might be much lower because there are few bidders below him and because the payment is subsidized by the fact that the other bidders could still get a slot. Therefore, we would expect the reserve price that maximizes revenue to be higher for a VCG auction than for a GSP auction.
+
+\item If Google suddenly switched their auction system from a GSP to a VCG, they would see an immediate decrease in ad revenue. When we make this change in our simulation, we see an average revenue of \$3900, which is below the revenue of \$4300 for a GSP auction. This is because the bidders are already adjusted to each other's bids, and the change in auction type does not incentivize the bidders to deviate. Therefore, instead of a GSP where we essentially interpret the second place bidder to not win anything, we reduce how much the winner pays to the externality he caused the rest of the players.
+
+\item Our biggest takeaway from this exercise is how different the auction dynamic is when we have a repeated simulation. With a single auction, it seems like the best choice for any individual is to bid the true value because there is no reason to differ. In a repeated game, this dynamic seems to change because as we get more information about the other bidders, we can make more informed choices, which in some cases even seem partially like collusion. It seems like some of these equilibriums can be beneficial to all the bidders at the expense of the auctioneer, which may be a tough problem to solve for the auctioneer.
+
+\end{enumerate}
+
+
+\end{enumerate}
+
+
+\end{noindent}
+\end{document}
