@@ -45,7 +45,7 @@ class BBAgent:
             try:
                 self.budget[bid[0]] -= history[t-1].slot_payments[i]
             i += 1
-
+        
 
 
 
