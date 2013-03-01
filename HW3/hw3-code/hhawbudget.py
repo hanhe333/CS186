@@ -82,7 +82,11 @@ class HHAWbudget:
         budget = self.calculate_budgets(t, history)[self.id]
         past_clicks = self.calculate_past_clicks(t, history)
 
-        if budget > 58000 and self.defaults(t, history) >= 1 and t < 46:
+        if budget > 57000 and self.defaults(t, history) >= 1 and t < 44:
+            return 0
+        if budget > 57500 and self.defaults(t, history) >= 1 and t < 45:
+            return 0
+        elif budget > 58000 and self.defaults(t, history) >= 1 and t < 46:
             return 0
         elif budget > 59000 and self.defaults(t, history) >= 1 and t < 47:
             return 0
