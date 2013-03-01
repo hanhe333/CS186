@@ -37,7 +37,7 @@ class HHAWbudget:
         return clicks
 
     def clicks_factor(self, t):
-        return self.clicks_round(t)/200.0
+        return self.clicks_round(t)/180.00
 
     def calculate_past_clicks(self, t, history):
         past_clicks = 0
@@ -71,7 +71,7 @@ class HHAWbudget:
         budget = self.calculate_budgets(t, history)[self.id]
         past_clicks = self.calculate_past_clicks(t, history)
 
-        return 1.0 - (budget/60000.0) + (float(past_clicks)/self.TOTAL_CLICKS)
+        return (1.0 - (budget/60000.0) + (float(past_clicks)/self.TOTAL_CLICKS))**3
 
         
     def slot_info(self, t, history, reserve):
@@ -92,7 +92,9 @@ class HHAWbudget:
 
             # predict other people's values
             for i in xrange(len(prev_round.bids)):
-                if abs(prev_round.bids[i][1] - prev_round2.bids[i][1]) < 10:
+                if prev_round.bids[i][1] == 0:
+                    avr_round.append(prev_round.bids[i])
+                elif abs(prev_round.bids[i][1] - prev_round2.bids[i][1]) < 10:
                     avr_round.append((prev_round.bids[i][0], .5*prev_round.bids[i][1] + .5*prev_round2.bids[i][1]))
                 else:
                     avr_round.append(prev_round2.bids[i])
@@ -196,7 +198,7 @@ class HHAWbudget:
         if bid > self.value:
             bid = self.value
         
-        return iround(bid)
+        return iround(bid)-0.1
 
     def __repr__(self):
         return "%s(id=%d, value=%d)" % (
