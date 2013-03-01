@@ -7,58 +7,72 @@ from gsp import GSP
 from util import argmax_index
 
 class HHAWbudget:
-    TOTAL_CLICKS = 0
     """Balanced bidding agent"""
     def __init__(self, id, value, budget):
         self.id = id
         self.value = value
         self.budget = budget
-        self.number_of_players
+        self.TOTAL_CLICKS = 0
+        self.NUMBER_OF_PLAYERS = 0
 
-    def calculate_total_clicks(self, t, history):
+    def initialize_parameters(self, t, history):
         num_slots = len(history.round(t-1).bids)-1
-        if num_slots == 3:
-            TOTAL_CLICKS = 5376
+        if num_slots == 3: 
+            self.TOTAL_CLICKS = 5376
         elif num_slots == 4:
-            TOTAL_CLICKS = 6352
-        elif num_slots == 5: 
-            TOTAL_CLICKS = 7084
+            self.TOTAL_CLICKS = 6352
+        elif num_slots == 5:
+            self.TOTAL_CLICKS = 7084
         elif num_slots == 6: 
-            TOTAL_CLICKS = 7637
+            self.TOTAL_CLICKS = 7637
+
+        self.NUMBER_OF_PLAYERS = len(history.round(t-1).bids)
+
+
+    def clicks_round(self, t):
+        clicks = 0.0
+        for i in range(self.NUMBER_OF_PLAYERS-1):
+            clicks += iround(iround(30*math.cos(math.pi*t/24) + 50)*(.75**i))
+
+        return clicks
+
+    def clicks_factor(self, t):
+        return self.clicks_round(t)/200.0
 
     def calculate_past_clicks(self, t, history):
         past_clicks = 0
         for i in range(t-1):
-            past_clicks += sum(history.round(t).clicks)
+            past_clicks += sum(history.round(i).clicks)
         return past_clicks
-
-    # set all budgets equal
-    def initialize_budget(self, t, history):
-        prev_round = history.round(t-1)
-        for bid in prev_round.bids:
-            self.budget[bid[0]] = self.budget[self.id]
 
     def calculate_budgets(self, t, history):
        # sorted from lowest bid to highest
        id_to_budget = dict()
 
        ids = list()
-       for i in xrange(history.round(t-1).bids):
+       for i in xrange(len(history.round(t-1).bids)):
            ids.append(history.round(t-1).bids[i][0])
 
        for idx in ids:
            for i in xrange(t):
-               bids = sorted(history.round(i).bids, key=lambda bid: bid[1])
+               bids = sorted(history.round(i).bids, key=lambda bid: -bid[1])
                slot_num = -1
-               for j in xrange(bids):
+               for j in xrange(len(bids)-1):
                    if bids[j][0] == idx:
                        slot_num = j
                if not idx in id_to_budget:
-                   id_to_buget[idx] = 0
+                   id_to_budget[idx] = 0
                if slot_num != -1:
                    id_to_budget[idx] = id_to_budget[idx] + history.round(i).slot_payments[slot_num]
 
        return id_to_budget
+
+    def budget_factor(self, t, history):
+        budget = self.calculate_budgets(t, history)[self.id]
+        past_clicks = self.calculate_past_clicks(t, history)
+
+        return 1.0 - (budget/60000.0) + (float(past_clicks)/self.TOTAL_CLICKS)
+
         
     def slot_info(self, t, history, reserve):
         """Compute the following for each slot, assuming that everyone else
@@ -71,7 +85,25 @@ class HHAWbudget:
         and max_bid would result in ending up in that slot)
         """
         prev_round = history.round(t-1)
-        other_bids = filter(lambda (a_id, b): a_id != self.id, prev_round.bids)
+        avr_round = []
+
+        if t >= 2:
+            prev_round2 = history.round(t-2)
+
+            # predict other people's values
+            for i in xrange(len(prev_round.bids)):
+                if prev_round.bids[i][1] == 0:
+                    avr_round.append((prev_round.bids[i][0], 0))
+                elif abs(prev_round.bids[i][1] - prev_round2.bids[i][1]) < 10:
+                    avr_round.append((prev_round.bids[i][0], .5*prev_round.bids[i][1] + .5*prev_round2.bids[i][1]))
+                else:
+                    avr_round.append(prev_round2.bids[i])
+        else:
+            avr_round = prev_round.bids
+
+        print "prediction: ", avr_round
+
+        other_bids = filter(lambda (a_id, b): a_id != self.id, avr_round)
 
         clicks = prev_round.clicks
         def compute(s):
@@ -118,12 +150,19 @@ class HHAWbudget:
         return info[i]
 
     def initial_bid(self, reserve):
-        return self.value
+        bid = 0
+        if self.value >= 125 or self.value <=75:
+           bid = self.value
+        elif self.value > 75 and self.value <= 100:
+           diff = 100 - self.value
+           bid = iround((1 - 0.02 * diff)*self.value)
+        elif self.value > 100 and self.value < 125:
+           diff = self.value - 100
+           bid = iround((0.5 + 0.02 * diff)*self.value)
+        if bid < reserve and reserve < self.value:
+           return reserve
 
-    def clicks_round(self, t):
-        clicks = 0.0
-        for i in range(self.number_of_players-1):
-            clicks += iround(iround(30*math.cos(math.pi*t/24) + 50)*(.75**i))
+        return bid
 
     def bid(self, t, history, reserve):
         # The Balanced bidding strategy (BB) is the strategy for a player j that, given
@@ -139,20 +178,29 @@ class HHAWbudget:
         # thus deal with all slots uniformly by defining clicks_{-1} = 2 clicks_0.
         #
 
-        # click ratio
+        # initialize parameters
+        if t == 1:
+            self.initialize_parameters(t, history)
+
         prev_round = history.round(t-1)
         
-        clicks = 0.0
-        for i in range(4):
-            clicks += iround(iround(30*math.cos(math.pi*t/24) + 50)*(.75**i))
+        (slot, min_bid, max_bid) = self.target_slot(t, history, reserve)
 
-        click_ratio = clicks/219.0
+        bid = min(reserve+1, self.value)
+        if slot == 0:
+            bid = max(min_bid, bid)
+        else:
+            bid = max((min_bid + max_bid)/2, bid)
 
-        # our budget
+        print "bid (pre factors): ", bid
+        print "budget: ", self.budget_factor(t, history)
+        print "click: ", self.clicks_factor(t)   
+        bid = bid*self.budget_factor(t, history)*self.clicks_factor(t)
 
-
+        if bid > self.value:
+            bid = self.value
         
-        return 0
+        return iround(bid)
 
     def __repr__(self):
         return "%s(id=%d, value=%d)" % (
