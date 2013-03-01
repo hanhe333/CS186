@@ -58,7 +58,7 @@ class HHAWbudget:
                bids = sorted(history.round(i).bids, key=lambda bid: -bid[1])
                slot_num = -1
                for j in xrange(len(bids)-1):
-                   if bids[j][0] == idx:
+                   if bids[j][0] == idx and j < len(history.round(i).slot_payments):
                        slot_num = j
                if not idx in id_to_budget:
                    id_to_budget[idx] = 0
@@ -67,11 +67,22 @@ class HHAWbudget:
 
        return id_to_budget
 
+    def defaults(self, t, history):
+        id_to_budget = self.calculate_budgets(t, history)
+        num_zero = 0
+        for key in id_to_budget:
+            if 60000 - id_to_budget[key] <= 0:
+                num_zero += 1
+        return num_zero
+
     def budget_factor(self, t, history):
         budget = self.calculate_budgets(t, history)[self.id]
         past_clicks = self.calculate_past_clicks(t, history)
 
-        return (1.0 - (budget/60000.0) + (float(past_clicks)/self.TOTAL_CLICKS))**3
+        if budget > 58500 and self.defaults(t, history) >= 1:
+            return 0
+
+        return (1.0 - (budget/60000.0) + (float(past_clicks)/self.TOTAL_CLICKS))**2
 
         
     def slot_info(self, t, history, reserve):
@@ -93,7 +104,7 @@ class HHAWbudget:
             # predict other people's values
             for i in xrange(len(prev_round.bids)):
                 if prev_round.bids[i][1] == 0:
-                    avr_round.append(prev_round.bids[i])
+                    avr_round.append(prev_round.bids[i])                       
                 elif abs(prev_round.bids[i][1] - prev_round2.bids[i][1]) < 10:
                     avr_round.append((prev_round.bids[i][0], .5*prev_round.bids[i][1] + .5*prev_round2.bids[i][1]))
                 else:
@@ -114,7 +125,7 @@ class HHAWbudget:
 #        sys.stdout.write("slot info: %s\n" % info)
         return info
 
-
+    
     def expected_utils(self, t, history, reserve):
         """
         Figure out the expected utility of bidding such that we win each
@@ -184,21 +195,35 @@ class HHAWbudget:
         
         (slot, min_bid, max_bid) = self.target_slot(t, history, reserve)
 
-        bid = min(reserve+1, self.value)
-        if slot == 0:
-            bid = max(min_bid, bid)
-        else:
-            bid = max((min_bid + max_bid)/2, bid)
+        num_default = self.defaults(t, history)
 
-        print "bid (pre factors): ", bid
-        print "budget: ", self.budget_factor(t, history)
-        print "click: ", self.clicks_factor(t)   
-        bid = bid*self.budget_factor(t, history)*self.clicks_factor(t)
+        bid = min(reserve+1, self.value)
+        if num_default == 0:
+            bid = max((min_bid + max_bid)/2, bid)
+        elif num_default == 1:
+            bid = max((.25*min_bid + .75*max_bid), bid)
+        elif num_default > 1:
+            bid = max(max_bid, bid)
+
+        budget_effect = self.budget_factor(t, history)
+        click_effect = self.clicks_factor(t)
+
+        print "bid (pre factors): ", bid, min_bid, max_bid
+        print "slot: ", slot
+        print "budget: ", budget_effect
+        print "click: ", click_effect
+  
+        bid = bid*budget_effect*click_effect
 
         if bid > self.value:
             bid = self.value
-        
-        return iround(bid)-0.1
+        if bid < reserve and reserve+1 < self.value:
+            bid = reserve+.01
+
+        if self.value < 50 and budget_effect > 1:
+            return self.value
+
+        return iround(bid)-0.01
 
     def __repr__(self):
         return "%s(id=%d, value=%d)" % (
