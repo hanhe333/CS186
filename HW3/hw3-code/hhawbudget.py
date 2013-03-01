@@ -40,7 +40,7 @@ class HHAWbudget:
         return iround(iround(30*math.cos(math.pi*t/24) + 50)*(.75**slot))
 
     def clicks_factor(self, t):
-        return self.clicks_round(t)/160.00
+        return (self.clicks_round(t)/150.00)**(.33)
 
     def calculate_past_clicks(self, t, history):
         past_clicks = 0
@@ -70,30 +70,37 @@ class HHAWbudget:
 
        return id_to_budget
 
-    def defaults(self, t, history):
-        id_to_budget = self.calculate_budgets(t, history)
+    def defaults(self, t, history, reserve):
         num_zero = 0
-        for key in id_to_budget:
-            if 60000 - id_to_budget[key] <= 0:
-                num_zero += 1
+
+        if t < 2:
+            return 0
+        else:
+            for i in xrange(self.NUMBER_OF_PLAYERS):
+                if history.round(t-2).bids[i][1] <= reserve+1 and history.round(t-1).bids[i][1] <= reserve+1 and i != self.id:
+                    num_zero += 1
+
+
         return num_zero
 
-    def budget_factor(self, t, history):
+    def budget_factor(self, t, history, reserve):
         budget = self.calculate_budgets(t, history)[self.id]
         past_clicks = self.calculate_past_clicks(t, history)
 
-        if budget > 56500 and self.defaults(t, history) >= 1 and t < 43:
+        if budget > 56000 and self.defaults(t, history, reserve) >= 1 and t < 42:
             return 0
-        elif budget > 57000 and self.defaults(t, history) >= 1 and t < 44:
+        elif budget > 56500 and self.defaults(t, history, reserve) >= 1 and t < 43:
             return 0
-        elif budget > 57500 and self.defaults(t, history) >= 1 and t < 45:
+        elif budget > 57000 and self.defaults(t, history, reserve) >= 1 and t < 44:
             return 0
-        elif budget > 58000 and self.defaults(t, history) >= 1 and t < 46:
+        elif budget > 57500 and self.defaults(t, history, reserve) >= 1 and t < 45:
             return 0
-        elif budget > 59000 and self.defaults(t, history) >= 1 and t < 47:
+        elif budget > 58000 and self.defaults(t, history, reserve) >= 1 and t < 46:
+            return 0
+        elif budget > 58500 and self.defaults(t, history, reserve) >= 1 and t < 47:
             return 0
 
-        return (1.0 - (budget/60000.0) + (float(past_clicks)/self.TOTAL_CLICKS))**2
+        return (1.0 - (budget/60000.0) + (float(past_clicks)/self.TOTAL_CLICKS))**2.5
 
         
     def slot_info(self, t, history, reserve):
@@ -174,7 +181,7 @@ class HHAWbudget:
         if self.value <=60:
            return self.value-.01
         else:
-            return .6*self.value-.01
+            return .55*self.value-.01
 
     def bid(self, t, history, reserve):
         # The Balanced bidding strategy (BB) is the strategy for a player j that, given
@@ -198,7 +205,7 @@ class HHAWbudget:
         
         (slot, min_bid, max_bid) = self.target_slot(t, history, reserve)
 
-        num_default = self.defaults(t, history)
+        num_default = self.defaults(t, history, reserve)
 
         bid = 0
         if num_default == 0:
@@ -208,9 +215,10 @@ class HHAWbudget:
         elif num_default > 1:
             bid = max_bid
 
-        budget_effect = self.budget_factor(t, history)
+        budget_effect = self.budget_factor(t, history, reserve)
         click_effect = self.clicks_factor(t)
 
+        print "defaults: ", num_default
         print "bid (pre factors): ", bid, min_bid, max_bid
         print "slot: ", slot
         print "budget: ", budget_effect
