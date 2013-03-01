@@ -13,7 +13,7 @@ class Sctwbudget:
         self.budget = budget
         self.total_spent = 0
         self.remaining = budget
-        self.roundsPerDay = 48
+        self.num_rounds = 48
 
     def initial_bid(self, reserve):
         return self.value / 2
@@ -40,7 +40,7 @@ class Sctwbudget:
             return (s, min, max)
             
         info = map(compute, range(len(clicks)))
-#        sys.stdout.write("slot info: %s\n" % info)
+
         return info
 
 
@@ -117,15 +117,12 @@ class Sctwbudget:
         # If the bid will prevent us from bidding at least the reserve for the rest of day:
         # reduce the bid to reserve price
         # (We want to be able to participate in every bidding)
-        if (self.remaining - bid) < reserve * (self.roundsPerDay - t):
+        if (self.remaining - clicks[slot] * bid) < (clicks[slot] * reserve * (self.num_rounds - t)):
             bid = reserve
-        
-        #print "budget =", self.remaining, "=", self.budget, "-", self.total_spent
         
         return bid
 
     def __repr__(self):
         return "%s(id=%d, value=%d)" % (
             self.__class__.__name__, self.id, self.value)
-
 
