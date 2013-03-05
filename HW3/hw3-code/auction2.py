@@ -345,6 +345,12 @@ def main(args):
             values = dict(zip(range(n), list(vals)))
             ##   Runs simulation  ###
             history = sim(options)
+
+            clicks = 0
+            for i in range(48):
+                clicks += sum(history.round(i).clicks)
+            print "total clicks: ", clicks
+
             ###  simulation ends.
             stats = Stats(history, values)
             # Print stats in console?

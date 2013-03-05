@@ -14,24 +14,24 @@ class HHAWbudget:
         self.budget = budget
         self.TOTAL_CLICKS = 0
         self.NUMBER_OF_PLAYERS = 0
+        self.NUMBER_OF_SLOTS = 0
 
     def initialize_parameters(self, t, history):
-        num_slots = len(history.round(t-1).bids)-1
-        if num_slots == 3: 
-            self.TOTAL_CLICKS = 5376
-        elif num_slots == 4:
-            self.TOTAL_CLICKS = 6352
-        elif num_slots == 5:
-            self.TOTAL_CLICKS = 7084
-        elif num_slots == 6: 
-            self.TOTAL_CLICKS = 7637
+        num_slots = len(history.round(t-1).clicks)
+
+        self.NUMBER_OF_SLOTS = num_slots
+
+        total_clicks = 0
+        for time in range(48):
+            total_clicks += self.clicks_round(time)
+
+        self.TOTAL_CLICKS = total_clicks
 
         self.NUMBER_OF_PLAYERS = len(history.round(t-1).bids)
 
-
     def clicks_round(self, t):
         clicks = 0.0
-        for slot in range(self.NUMBER_OF_PLAYERS-1):
+        for slot in range(self.NUMBER_OF_SLOTS):
             clicks += self.clicks_slot(t, slot)
 
         return clicks
@@ -40,7 +40,7 @@ class HHAWbudget:
         return iround(iround(30*math.cos(math.pi*t/24) + 50)*(.75**slot))
 
     def clicks_factor(self, t):
-        return (self.clicks_round(t)/150.00)**(.33)
+        return (self.clicks_round(t)/(self.TOTAL_CLICKS/48))**(.33)
 
     def calculate_past_clicks(self, t, history):
         past_clicks = 0
@@ -79,7 +79,8 @@ class HHAWbudget:
             for i in xrange(self.NUMBER_OF_PLAYERS):
                 if history.round(t-2).bids[i][1] <= reserve+1 and history.round(t-1).bids[i][1] <= reserve+1 and i != self.id:
                     num_zero += 1
-
+                elif history.round(t-1).bids[i][1] <= reserve+1 and i != self.id:
+                    num_zero += .5
 
         return num_zero
 
@@ -87,7 +88,11 @@ class HHAWbudget:
         budget = self.calculate_budgets(t, history)[self.id]
         past_clicks = self.calculate_past_clicks(t, history)
 
-        if budget > 56000 and self.defaults(t, history, reserve) >= 1 and t < 42:
+        # print "budget: ", budget
+
+        if budget > 55500 and self.defaults(t, history, reserve) >= 1 and t < 41:
+            return 0
+        elif budget > 56000 and self.defaults(t, history, reserve) >= 1 and t < 42:
             return 0
         elif budget > 56500 and self.defaults(t, history, reserve) >= 1 and t < 43:
             return 0
@@ -198,8 +203,11 @@ class HHAWbudget:
         #
 
         # initialize parameters
-        if t == 1:
+        if self.NUMBER_OF_PLAYERS == 0 or self.TOTAL_CLICKS == 0 or self.NUMBER_OF_SLOTS == 0:
             self.initialize_parameters(t, history)
+            # print "Number of players: ", self.NUMBER_OF_PLAYERS
+            # print "Number of slots: ", self.NUMBER_OF_SLOTS
+            # print "Total clicks", self.TOTAL_CLICKS
 
         prev_round = history.round(t-1)
         
@@ -210,7 +218,7 @@ class HHAWbudget:
         bid = 0
         if num_default == 0:
             bid = (min_bid + max_bid)/2
-        elif num_default == 1:
+        elif num_default > 0 and num_default <= 1:
             bid = (.25*min_bid + .75*max_bid)
         elif num_default > 1:
             bid = max_bid
@@ -218,18 +226,21 @@ class HHAWbudget:
         budget_effect = self.budget_factor(t, history, reserve)
         click_effect = self.clicks_factor(t)
 
-        print "defaults: ", num_default
-        print "bid (pre factors): ", bid, min_bid, max_bid
-        print "slot: ", slot
-        print "budget: ", budget_effect
-        print "click: ", click_effect
+        # print "defaults: ", num_default
+        # print "bid (pre factors): ", bid, min_bid, max_bid
+        # print "slot: ", slot
+        # print "budget: ", budget_effect
+        # print "click: ", click_effect
   
         bid = bid*budget_effect*click_effect
 
+        if bid > max_bid:
+            bid = max_bid
+
         if bid > self.value:
             bid = self.value
-        if bid < reserve and reserve+.01 < self.value:
-            return reserve+.01
+        if bid < reserve+1.01 and reserve+1.01 < self.value:
+            return reserve+1.01
 
         if self.value < 50 and budget_effect > 1:
             return self.value
