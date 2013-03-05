@@ -87,31 +87,15 @@ class HHAWbudget:
     def budget_factor(self, t, history, reserve):
         budget = self.calculate_budgets(t, history)[self.id]
         past_clicks = self.calculate_past_clicks(t, history)
-
-        # print "budget: ", budget
-
         defaults = self.defaults(t, history, reserve)
-
-        if budget > self.budget*43.5/48.0 and defaults >= 1 and t < 40:
-            return 0
-        elif budget > self.budget*44/48.0 and defaults >= 1 and t < 41:
-            return 0
-        elif budget > self.budget*44.5/48.0 and defaults >= 1 and t < 42:
-            return 0
-        elif budget > self.budget*45/48.0 and defaults >= 1 and t < 43:
-            return 0
-        elif budget > self.budget*45.5/48.0 and defaults >= 1 and t < 44:
-            return 0
-        elif budget > self.budget*46/48.0 and defaults >= 1 and t < 45:
-            return 0
-        elif budget > self.budget*46.5/48.0 and defaults >= 1 and t < 46:
-            return 0
-        elif budget > self.budget*47.0/48.0 and defaults >= 1 and t < 47:
-            return 0
 
         budget_value = (1.0 - (budget/60000.0) + (float(past_clicks)/self.TOTAL_CLICKS))**2.5
 
-        if budget_value < .75 and defaults >= 1:
+        if budget_value < .7 and defaults >= .5:
+            return 0
+        elif budget_value < .8 and defaults >= 1:
+            return 0
+        elif budget_value < .85 and defaults >= 1.5 and t < 47:
             return 0
 
         return budget_value
@@ -214,9 +198,9 @@ class HHAWbudget:
         # initialize parameters
         if self.NUMBER_OF_PLAYERS == 0 or self.TOTAL_CLICKS == 0 or self.NUMBER_OF_SLOTS == 0:
             self.initialize_parameters(t, history)
-            print "Number of players: ", self.NUMBER_OF_PLAYERS
-            print "Number of slots: ", self.NUMBER_OF_SLOTS
-            print "Total clicks", self.TOTAL_CLICKS
+            # print "Number of players: ", self.NUMBER_OF_PLAYERS
+            # print "Number of slots: ", self.NUMBER_OF_SLOTS
+            # print "Total clicks", self.TOTAL_CLICKS
 
         prev_round = history.round(t-1)
         
@@ -235,11 +219,11 @@ class HHAWbudget:
         budget_effect = self.budget_factor(t, history, reserve)
         click_effect = self.clicks_factor(t)
 
-        print "defaults: ", num_default
-        print "bid (pre factors): ", bid, min_bid, max_bid
-        print "slot: ", slot
-        print "budget: ", budget_effect
-        print "click: ", click_effect
+        # print "defaults: ", num_default
+        # print "bid (pre factors): ", bid, min_bid, max_bid
+        # print "slot: ", slot
+        # print "budget: ", budget_effect
+        # print "click: ", click_effect
   
         bid = bid*budget_effect*click_effect
 
@@ -251,7 +235,7 @@ class HHAWbudget:
         if bid < reserve+1.01 and reserve+1.01 < self.value:
             return reserve+1.01
 
-        if self.value < 50 and budget_effect > 1:
+        if self.value < 75 and budget_effect > 1:
             return self.value
 
         return iround(bid)-0.01
